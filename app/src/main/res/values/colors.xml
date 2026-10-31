@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#FF2196F3</color>
+    <color name="primary_dark">#FF1565C0</color>
+    <color name="pdf_red">#FFE91E63</color>
+    <color name="launcher_background">#FFFFFFFF</color>
+</resources>

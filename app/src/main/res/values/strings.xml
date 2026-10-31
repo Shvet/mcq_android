@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NEET Chapter-wise Chemistry</string>
+    <string name="toolbar_title">1GoalFreeEducation4All</string>
+    <string name="splash_title">NEET-AIPMT Chapter-wise रसायन-विज्ञान</string>
+    <string name="brand_badge">1GoalFreeEducation4All</string>
+
+    <string name="menu_home">Home</string>
+    <string name="menu_bookmarks">Pdf BookMark</string>
+    <string name="menu_share">Share App</string>
+    <string name="menu_rate">Rate Us</string>
+    <string name="menu_feedback">Feedback(Mail)</string>
+    <string name="menu_privacy">Privacy Policy</string>
+    <string name="menu_more_apps">More Apps</string>
+    <string name="menu_jump_to_page">Jump To Page</string>
+    <string name="menu_share_pdf_link">Share This PDF</string>
+
+    <string name="last_read_title">Dear Students Please Note:</string>
+    <string name="last_read_message">Use this button to quickly open last PDF you were reading... happy reading...Press the Button Again.</string>
+    <string name="no_last_read">You have not opened any PDF yet. Open a PDF and it will be remembered here.</string>
+
+    <string name="support_title">Show Your Support !!</string>
+    <string name="support_message">आशा है आपको ये एप पसंद आएगी !! प्ले स्टोर पर रेट जरूर करें ऐप समय समय पर अपडेट होता रहेगा\nPlease give us your honest feedback to make the App even better!</string>
+    <string name="support_quit">Yes, Quit Now!!</string>
+    <string name="support_rate">Rate App Now !</string>
+
+    <string name="ok">OK</string>
+    <string name="cancel">CANCEL</string>
+    <string name="retry">Retry</string>
+    <string name="close">Close</string>
+    <string name="loading">Loading…</string>
+    <string name="error_loading">Could not load content. Check your internet connection.</string>
+    <string name="empty_list">Nothing here yet.</string>
+
+    <string name="jump_to_page">Jump To Page</string>
+    <string name="invalid_page">Enter a page between 1 and %1$d</string>
+
+    <string name="questions_section">QUESTIONS-SECTION:</string>
+    <string name="answers_section">ANSWERS-SECTION:</string>
+    <string name="page_no">Page No: %1$d</string>
+    <string name="bookmarks_empty">No bookmarks yet. Tap the bookmark icon while reading a PDF to save a page.</string>
+    <string name="bookmark_added">Page %1$d bookmarked</string>
+    <string name="bookmark_removed">Bookmark removed</string>
+
+    <string name="draw_hint">Draw &amp; take ScreenShot or click here to cancel</string>
+    <string name="screenshot_captured">Screenshot captured. Now you can share the screenshot.</string>
+    <string name="screenshot_failed">Could not capture the screenshot.</string>
+    <string name="share_screenshot">Share Screenshot</string>
+    <string name="send_email_using">Send Email Using…</string>
+    <string name="share_app_using">Share App Using…</string>
+    <string name="feedback_subject">Feedback: %1$s</string>
+    <string name="no_email_app">No email app found.</string>
+
+    <string name="search_hint">Search in this PDF</string>
+    <string name="search_title">Search</string>
+    <string name="search_no_results">No matches found.</string>
+    <string name="search_results">Found on %1$d page(s)</string>
+    <string name="search_page_result">Page %1$d</string>
+    <string name="searching">Searching…</string>
+
+    <string name="night_mode">Night mode</string>
+    <string name="day_mode">Day mode</string>
+    <string name="search">Search</string>
+    <string name="screenshot">Screenshot</string>
+    <string name="bookmark">Bookmark</string>
+    <string name="draw">Draw</string>
+    <string name="more">More</string>
+    <string name="back">Back</string>
+    <string name="open_menu">Open menu</string>
+    <string name="delete">Delete</string>
+    <string name="open_last_pdf">Open last PDF</string>
+
+    <string name="eraser">Eraser</string>
+    <string name="stroke_size">Stroke size</string>
+    <string name="color">Color</string>
+    <string name="opacity">Opacity</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
+
+    <string name="update_required_title">Update available</string>
+    <string name="update_required_message">A newer version of this app is available. Please update to keep getting new PDFs.</string>
+    <string name="update_now">Update Now</string>
+</resources>
