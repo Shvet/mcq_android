@@ -16,11 +16,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.onegoal.mcq.ads.InterstitialAds
 import com.onegoal.mcq.model.ContentItem
+import com.onegoal.mcq.model.HomeTarget
 import com.onegoal.mcq.model.QuizNode
 import com.onegoal.mcq.ui.AppViewModel
 import com.onegoal.mcq.ui.appContainer
 import com.onegoal.mcq.ui.bookmarks.BookmarksScreen
 import com.onegoal.mcq.ui.home.HomeScreen
+import com.onegoal.mcq.ui.home.HomeSectionsViewModel
 import com.onegoal.mcq.ui.list.ContentListScreen
 import com.onegoal.mcq.ui.list.ContentListViewModel
 import com.onegoal.mcq.ui.pdf.PdfViewerScreen
@@ -109,6 +111,9 @@ fun McqNavHost(
         }
 
         composable(Routes.HOME) {
+            val homeViewModel: HomeSectionsViewModel = viewModel(
+                factory = viewModelFactory { initializer { HomeSectionsViewModel(container.repository) } },
+            )
             val viewModel: ContentListViewModel = viewModel(
                 factory = viewModelFactory { initializer { ContentListViewModel(container.repository, parent = null) } },
             )
@@ -116,6 +121,7 @@ fun McqNavHost(
                 factory = viewModelFactory { initializer { QuizListViewModel(container.repository, parent = null) } },
             )
             HomeScreen(
+                homeViewModel = homeViewModel,
                 viewModel = viewModel,
                 quizViewModel = quizViewModel,
                 config = config,
@@ -123,6 +129,13 @@ fun McqNavHost(
                 lastRead = lastRead,
                 isLastReadHintShown = appViewModel::isLastReadHintShown,
                 onLastReadHintShown = appViewModel::markLastReadHintShown,
+                onOpenHomeItem = { item ->
+                    when (val target = item.target) {
+                        is HomeTarget.Pdf -> openItem(target.item)
+                        is HomeTarget.Quiz -> openQuiz(target.node)
+                        HomeTarget.None -> Unit
+                    }
+                },
                 onOpenItem = ::openItem,
                 onOpenQuiz = ::openQuiz,
                 onResume = { position -> openPdf(position.item, position.sectionIndex, position.page) },

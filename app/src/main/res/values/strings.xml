@@ -81,6 +81,7 @@
     <string name="update_required_message">A newer version of this app is available. Please update to keep getting new PDFs.</string>
     <string name="update_now">Update Now</string>
     <!-- MCQ tests -->
+    <string name="tab_home">Home</string>
     <string name="tab_pdf">PDF</string>
     <string name="tab_mcq">MCQ Test</string>
     <string name="quiz_empty_list">No MCQ tests here yet.</string>
@@ -144,4 +145,13 @@
     <string name="quiz_note">Note</string>
     <string name="quiz_no_review_items">No questions in this group.</string>
     <string name="quiz_share_text">I scored %1$d/%2$d in \"%3$s\" in %4$s.</string>
+    <string name="home_tap_to_open">Tap to open</string>
+    <plurals name="home_items">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <plurals name="home_questions">
+        <item quantity="one">%d question</item>
+        <item quantity="other">%d questions</item>
+    </plurals>
 </resources>

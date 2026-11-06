@@ -8,6 +8,7 @@ import com.onegoal.mcq.data.remote.McqApi
 import com.onegoal.mcq.data.remote.QuizNodeDto
 import com.onegoal.mcq.model.AppConfig
 import com.onegoal.mcq.model.ContentItem
+import com.onegoal.mcq.model.HomeSection
 import com.onegoal.mcq.model.NodeLevel
 import com.onegoal.mcq.model.PdfSection
 import com.onegoal.mcq.model.QuizNode
@@ -28,6 +29,11 @@ class McqRepository(
 ) {
     val bookmarks: Flow<List<BookmarkEntity>> = bookmarkDao.observeAll()
     val bookmarkCount: Flow<Int> = bookmarkDao.observeCount()
+
+    /** Home tab: the sections built in admin for this app's package (empty when none are set up). */
+    suspend fun homeSections(): List<HomeSection> = emptyOn404 {
+        api.home(packageName).data.toHomeSections(defaultQuestionLabel, defaultAnswerLabel)
+    }
 
     /** Top level list on the home screen (categories of this app's package). */
     suspend fun homeItems(): List<ContentItem> = emptyOn404 {
@@ -156,10 +162,7 @@ class McqRepository(
         runCatching { json.decodeFromString(ContentItem.serializer(), itemJson) }.getOrNull()
 
     private fun sections(pdf: String?, answerPdf: String?, questionLabel: String?, answerLabel: String?): List<PdfSection> =
-        buildList {
-            if (!pdf.isNullOrBlank()) add(PdfSection(questionLabel?.takeIf { it.isNotBlank() } ?: defaultQuestionLabel, pdf))
-            if (!answerPdf.isNullOrBlank()) add(PdfSection(answerLabel?.takeIf { it.isNotBlank() } ?: defaultAnswerLabel, answerPdf))
-        }
+        pdfSections(pdf, answerPdf, questionLabel, answerLabel, defaultQuestionLabel, defaultAnswerLabel)
 
     /** The backend answers 404 with an empty list when a level has no rows yet. */
     private suspend fun <T> emptyOn404(block: suspend () -> List<T>): List<T> = try {

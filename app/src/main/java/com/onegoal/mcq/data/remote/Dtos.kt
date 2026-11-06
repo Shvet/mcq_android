@@ -116,3 +116,33 @@ data class QuizQuestionDto(
     @SerialName("correct_option") val correctOption: Int,
     val note: String? = null,
 )
+
+/** Section of GET /api/home?package_name=… (admin "Home Screen Sections"). */
+@Serializable
+data class HomeSectionDto(
+    val id: Long,
+    val title: String = "",
+    val layout: String? = null,
+    @SerialName("item_type") val itemType: String? = null,
+    val items: List<HomeItemDto> = emptyList(),
+)
+
+/** Item of a home section; `type` names the tree and level it comes from. */
+@Serializable
+data class HomeItemDto(
+    val id: Long,
+    val type: String,
+    val name: String = "",
+    @SerialName("parent_name") val parentName: String? = null,
+    @SerialName("item_label") val itemLabel: String? = null,
+    @SerialName("has_children") val hasChildren: Boolean = false,
+    val image: String? = null,
+    val pdf: String? = null,
+    @SerialName("answer_pdf") val answerPdf: String? = null,
+    @SerialName("question_label") val questionLabel: String? = null,
+    @SerialName("answer_label") val answerLabel: String? = null,
+    val audio: String? = null,
+    val video: String? = null,
+    @SerialName("question_count") val questionCount: Int = 0,
+    val children: List<HomeItemDto> = emptyList(),
+)
