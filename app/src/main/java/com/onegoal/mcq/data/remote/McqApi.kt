@@ -22,4 +22,25 @@ interface McqApi {
     @FormUrlEncoded
     @POST("api/mcq-sub-sub-categories")
     suspend fun subSubCategories(@Field("mcq_sub_category_id") subCategoryId: Long): ListResponse<SubSubCategoryDto>
+
+    @FormUrlEncoded
+    @POST("api/quiz-categories")
+    suspend fun quizCategories(@Field("package_name") packageName: String): ListResponse<QuizNodeDto>
+
+    @FormUrlEncoded
+    @POST("api/quiz-sub-categories")
+    suspend fun quizSubCategories(@Field("quiz_category_id") categoryId: Long): ListResponse<QuizNodeDto>
+
+    @FormUrlEncoded
+    @POST("api/quiz-sub-sub-categories")
+    suspend fun quizSubSubCategories(@Field("quiz_sub_category_id") subCategoryId: Long): ListResponse<QuizNodeDto>
+
+    /** Questions of one test; send only the id that matches the test's level (null fields are skipped). */
+    @FormUrlEncoded
+    @POST("api/quiz-questions")
+    suspend fun quizQuestions(
+        @Field("quiz_category_id") categoryId: Long? = null,
+        @Field("quiz_sub_category_id") subCategoryId: Long? = null,
+        @Field("quiz_sub_sub_category_id") subSubCategoryId: Long? = null,
+    ): ListResponse<QuizQuestionDto>
 }

@@ -5,10 +5,14 @@ import com.onegoal.mcq.data.local.BookmarkEntity
 import com.onegoal.mcq.data.prefs.AppPreferences
 import com.onegoal.mcq.data.remote.AppConfigDto
 import com.onegoal.mcq.data.remote.McqApi
+import com.onegoal.mcq.data.remote.QuizNodeDto
 import com.onegoal.mcq.model.AppConfig
 import com.onegoal.mcq.model.ContentItem
 import com.onegoal.mcq.model.NodeLevel
 import com.onegoal.mcq.model.PdfSection
+import com.onegoal.mcq.model.QuizNode
+import com.onegoal.mcq.model.QuizOption
+import com.onegoal.mcq.model.QuizQuestion
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
@@ -69,6 +73,57 @@ class McqRepository(
             NodeLevel.SUB_SUB_CATEGORY -> emptyList()
         }
     }
+
+    /** Top level of the MCQ tab (MCQ categories of this app's package). */
+    suspend fun quizHome(): List<QuizNode> = emptyOn404 {
+        api.quizCategories(packageName).data.map { it.toQuizNode(NodeLevel.CATEGORY, parentTitle = null) }
+    }
+
+    /** Children of an MCQ folder row. */
+    suspend fun quizChildren(parent: QuizNode): List<QuizNode> = emptyOn404 {
+        when (parent.level) {
+            NodeLevel.CATEGORY -> api.quizSubCategories(parent.id).data
+                .map { it.toQuizNode(NodeLevel.SUB_CATEGORY, parentTitle = parent.title) }
+
+            NodeLevel.SUB_CATEGORY -> api.quizSubSubCategories(parent.id).data
+                .map { it.toQuizNode(NodeLevel.SUB_SUB_CATEGORY, parentTitle = parent.title).copy(hasChildren = false) }
+
+            NodeLevel.SUB_SUB_CATEGORY -> emptyList()
+        }
+    }
+
+    /** Questions of a test, dropping any malformed rows (fewer than two answers or no valid right answer). */
+    suspend fun quizQuestions(test: QuizNode): List<QuizQuestion> = emptyOn404 {
+        val response = when (test.level) {
+            NodeLevel.CATEGORY -> api.quizQuestions(categoryId = test.id)
+            NodeLevel.SUB_CATEGORY -> api.quizQuestions(subCategoryId = test.id)
+            NodeLevel.SUB_SUB_CATEGORY -> api.quizQuestions(subSubCategoryId = test.id)
+        }
+        response.data.mapNotNull { dto ->
+            val options = dto.options
+                .filter { !it.text.isNullOrBlank() || !it.image.isNullOrBlank() }
+                .map { QuizOption(number = it.number, label = it.label ?: ('A' + (it.number - 1)).toString(), text = it.text?.trim(), imageUrl = it.image) }
+            if (options.size < 2 || options.none { it.number == dto.correctOption }) return@mapNotNull null
+            QuizQuestion(
+                id = dto.id,
+                text = dto.question.text?.trim()?.takeIf { it.isNotEmpty() },
+                imageUrl = dto.question.image?.takeIf { it.isNotBlank() },
+                options = options,
+                correctOption = dto.correctOption,
+                note = dto.note?.trim()?.takeIf { it.isNotEmpty() },
+            )
+        }
+    }
+
+    private fun QuizNodeDto.toQuizNode(level: NodeLevel, parentTitle: String?) = QuizNode(
+        id = id,
+        level = level,
+        title = name,
+        parentTitle = parentTitle ?: categoryName,
+        imageUrl = image?.takeIf { it.isNotBlank() },
+        hasChildren = hasChildren == 1,
+        questionCount = questionCount,
+    )
 
     /** Fetches the admin-panel settings for this app and caches them for offline starts. */
     suspend fun refreshAppConfig(): AppConfig? = runCatching {

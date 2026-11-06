@@ -80,3 +80,39 @@ data class AppConfigDto(
     @SerialName("interstitial_every") val interstitialEvery: Int = 3,
     @SerialName("min_version_code") val minVersionCode: Int = 1,
 )
+
+/** Row of /api/quiz-categories, /api/quiz-sub-categories and /api/quiz-sub-sub-categories. */
+@Serializable
+data class QuizNodeDto(
+    val id: Long,
+    val name: String,
+    val image: String? = null,
+    @SerialName("has_children") val hasChildren: Int = 0,
+    @SerialName("question_count") val questionCount: Int = 0,
+    @SerialName("category_name") val categoryName: String? = null,
+    @SerialName("sub_category_name") val subCategoryName: String? = null,
+)
+
+@Serializable
+data class QuizContentDto(
+    val text: String? = null,
+    val image: String? = null,
+)
+
+@Serializable
+data class QuizOptionDto(
+    val number: Int,
+    val label: String? = null,
+    val text: String? = null,
+    val image: String? = null,
+)
+
+/** Row of /api/quiz-questions. */
+@Serializable
+data class QuizQuestionDto(
+    val id: Long,
+    val question: QuizContentDto = QuizContentDto(),
+    val options: List<QuizOptionDto> = emptyList(),
+    @SerialName("correct_option") val correctOption: Int,
+    val note: String? = null,
+)

@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.onegoal.mcq.ads.InterstitialAds
 import com.onegoal.mcq.model.ContentItem
+import com.onegoal.mcq.model.QuizNode
 import com.onegoal.mcq.ui.AppViewModel
 import com.onegoal.mcq.ui.appContainer
 import com.onegoal.mcq.ui.bookmarks.BookmarksScreen
@@ -24,6 +25,11 @@ import com.onegoal.mcq.ui.list.ContentListScreen
 import com.onegoal.mcq.ui.list.ContentListViewModel
 import com.onegoal.mcq.ui.pdf.PdfViewerScreen
 import com.onegoal.mcq.ui.pdf.PdfViewerViewModel
+import com.onegoal.mcq.ui.quiz.QuizListScreen
+import com.onegoal.mcq.ui.quiz.QuizListViewModel
+import com.onegoal.mcq.ui.quiz.QuizResultScreen
+import com.onegoal.mcq.ui.quiz.QuizTestScreen
+import com.onegoal.mcq.ui.quiz.QuizTestViewModel
 import com.onegoal.mcq.ui.splash.SplashScreen
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -34,9 +40,15 @@ private object Routes {
     const val BOOKMARKS = "bookmarks"
     const val LIST = "list/{item}"
     const val PDF = "pdf/{item}?section={section}&page={page}"
+    const val QUIZ_LIST = "quiz-list/{node}"
+    const val QUIZ_TEST = "quiz-test/{node}"
+    const val QUIZ_RESULT = "quiz-result/{result}"
 
     fun list(itemJson: String) = "list/${Uri.encode(itemJson)}"
     fun pdf(itemJson: String, section: Int, page: Int) = "pdf/${Uri.encode(itemJson)}?section=$section&page=$page"
+    fun quizList(nodeJson: String) = "quiz-list/${Uri.encode(nodeJson)}"
+    fun quizTest(nodeJson: String) = "quiz-test/${Uri.encode(nodeJson)}"
+    fun quizResult(resultId: Long) = "quiz-result/$resultId"
 }
 
 @Composable
@@ -69,6 +81,19 @@ fun McqNavHost(
         }
     }
 
+    fun encodeNode(node: QuizNode) = json.encodeToString(QuizNode.serializer(), node)
+
+    fun decodeNode(value: String?): QuizNode? =
+        value?.let { runCatching { json.decodeFromString(QuizNode.serializer(), it) }.getOrNull() }
+
+    fun openQuiz(node: QuizNode) {
+        if (node.hasChildren) {
+            navController.navigate(Routes.quizList(encodeNode(node)))
+        } else {
+            navController.navigate(Routes.quizTest(encodeNode(node)))
+        }
+    }
+
     fun goHome() {
         navController.popBackStack(Routes.HOME, inclusive = false)
     }
@@ -87,14 +112,19 @@ fun McqNavHost(
             val viewModel: ContentListViewModel = viewModel(
                 factory = viewModelFactory { initializer { ContentListViewModel(container.repository, parent = null) } },
             )
+            val quizViewModel: QuizListViewModel = viewModel(
+                factory = viewModelFactory { initializer { QuizListViewModel(container.repository, parent = null) } },
+            )
             HomeScreen(
                 viewModel = viewModel,
+                quizViewModel = quizViewModel,
                 config = config,
                 bookmarkCount = bookmarkCount,
                 lastRead = lastRead,
                 isLastReadHintShown = appViewModel::isLastReadHintShown,
                 onLastReadHintShown = appViewModel::markLastReadHintShown,
                 onOpenItem = ::openItem,
+                onOpenQuiz = ::openQuiz,
                 onResume = { position -> openPdf(position.item, position.sectionIndex, position.page) },
                 onBookmarks = { navController.navigate(Routes.BOOKMARKS) },
                 onExit = onExit,
@@ -166,6 +196,64 @@ fun McqNavHost(
                 viewModel = viewModel,
                 config = config,
                 onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = Routes.QUIZ_LIST,
+            arguments = listOf(navArgument("node") { type = NavType.StringType }),
+        ) { entry ->
+            val node = decodeNode(entry.arguments?.getString("node")) ?: return@composable
+            val viewModel: QuizListViewModel = viewModel(
+                factory = viewModelFactory { initializer { QuizListViewModel(container.repository, parent = node) } },
+            )
+            QuizListScreen(
+                parent = node,
+                viewModel = viewModel,
+                config = config,
+                onBack = { navController.popBackStack() },
+                onHome = ::goHome,
+                onOpen = ::openQuiz,
+            )
+        }
+
+        composable(
+            route = Routes.QUIZ_TEST,
+            arguments = listOf(navArgument("node") { type = NavType.StringType }),
+        ) { entry ->
+            val node = decodeNode(entry.arguments?.getString("node")) ?: return@composable
+            val viewModel: QuizTestViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { QuizTestViewModel(container.repository, container.quizResults, node) }
+                },
+            )
+            QuizTestScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onFinished = { resultId ->
+                    // The result replaces the test, so Back from the result returns to the test list.
+                    navController.navigate(Routes.quizResult(resultId)) {
+                        popUpTo(Routes.QUIZ_TEST) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(
+            route = Routes.QUIZ_RESULT,
+            arguments = listOf(navArgument("result") { type = NavType.LongType }),
+        ) { entry ->
+            val result = entry.arguments?.getLong("result")?.let(container.quizResults::get)
+            QuizResultScreen(
+                result = result,
+                config = config,
+                onClose = { navController.popBackStack() },
+                onRetake = {
+                    val test = result?.test ?: return@QuizResultScreen
+                    navController.navigate(Routes.quizTest(encodeNode(test))) {
+                        popUpTo(Routes.QUIZ_RESULT) { inclusive = true }
+                    }
+                },
             )
         }
     }

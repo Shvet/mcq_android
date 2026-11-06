@@ -54,11 +54,12 @@ object Intents {
         }
     }
 
-    fun shareImage(context: Context, file: File) {
+    fun shareImage(context: Context, file: File, text: String? = null) {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
+            if (!text.isNullOrBlank()) putExtra(Intent.EXTRA_TEXT, text)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(send, context.getString(R.string.share_screenshot)))

@@ -12,22 +12,31 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.onegoal.mcq.R
 import com.onegoal.mcq.model.AppConfig
 import com.onegoal.mcq.model.ContentItem
+import com.onegoal.mcq.model.QuizNode
 import com.onegoal.mcq.model.ReadingPosition
 import com.onegoal.mcq.ui.components.BannerAd
 import com.onegoal.mcq.ui.components.BannerSize
@@ -39,6 +48,8 @@ import com.onegoal.mcq.ui.components.McqTopBar
 import com.onegoal.mcq.ui.components.OverflowAction
 import com.onegoal.mcq.ui.components.SupportDialog
 import com.onegoal.mcq.ui.list.ContentListViewModel
+import com.onegoal.mcq.ui.quiz.QuizListViewModel
+import com.onegoal.mcq.ui.quiz.QuizNodeList
 import com.onegoal.mcq.ui.theme.McqColors
 import com.onegoal.mcq.util.Intents
 import kotlinx.coroutines.launch
@@ -46,12 +57,14 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     viewModel: ContentListViewModel,
+    quizViewModel: QuizListViewModel,
     config: AppConfig,
     bookmarkCount: Int,
     lastRead: ReadingPosition?,
     isLastReadHintShown: suspend () -> Boolean,
     onLastReadHintShown: () -> Unit,
     onOpenItem: (ContentItem) -> Unit,
+    onOpenQuiz: (QuizNode) -> Unit,
     onResume: (ReadingPosition) -> Unit,
     onBookmarks: () -> Unit,
     onExit: () -> Unit,
@@ -59,6 +72,8 @@ fun HomeScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val quizState by quizViewModel.state.collectAsStateWithLifecycle()
+    var selectedTab by rememberSaveable { mutableStateOf(HomeTab.Pdf) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     var showSupport by remember { mutableStateOf(false) }
     var showLastReadHint by remember { mutableStateOf(false) }
@@ -81,7 +96,7 @@ fun HomeScreen(
                     title = config.toolbarTitle ?: stringResource(R.string.toolbar_title),
                     onNavigation = openDrawer,
                     showBack = false,
-                    onHome = { viewModel.load() },
+                    onHome = { if (selectedTab == HomeTab.Pdf) viewModel.load() else quizViewModel.load() },
                     overflow = buildList {
                         add(OverflowAction(context.getString(R.string.menu_share)) { Intents.shareApp(context, config.shareMessage) })
                         add(OverflowAction(context.getString(R.string.menu_rate)) { Intents.rateApp(context) })
@@ -91,7 +106,7 @@ fun HomeScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
+                if (selectedTab == HomeTab.Pdf) FloatingActionButton(
                     onClick = {
                         scope.launch {
                             when {
@@ -119,13 +134,22 @@ fun HomeScreen(
                     .padding(padding)
                     .fillMaxSize(),
             ) {
-                ContentList(
-                    state = state,
-                    onRetry = viewModel::load,
-                    onItemClick = onOpenItem,
-                    trailingLabel = { index, _ -> (index + 1).toString() },
-                    modifier = Modifier.weight(1f),
-                )
+                HomeTabs(selected = selectedTab, onSelect = { selectedTab = it })
+                when (selectedTab) {
+                    HomeTab.Pdf -> ContentList(
+                        state = state,
+                        onRetry = viewModel::load,
+                        onItemClick = onOpenItem,
+                        trailingLabel = { index, _ -> (index + 1).toString() },
+                        modifier = Modifier.weight(1f),
+                    )
+                    HomeTab.Mcq -> QuizNodeList(
+                        state = quizState,
+                        onRetry = quizViewModel::load,
+                        onOpen = onOpenQuiz,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
                 BannerAd(
                     enabled = config.adsEnabled,
                     adUnitId = config.bannerAdUnitId,
@@ -165,5 +189,41 @@ fun HomeScreen(
             },
             onDismiss = { showSupport = false },
         )
+    }
+}
+
+private enum class HomeTab(val label: Int) { Pdf(R.string.tab_pdf), Mcq(R.string.tab_mcq) }
+
+/** PDF / MCQ switch under the app bar, in the toolbar colour so it reads as one header. */
+@Composable
+private fun HomeTabs(selected: HomeTab, onSelect: (HomeTab) -> Unit) {
+    TabRow(
+        selectedTabIndex = selected.ordinal,
+        containerColor = McqColors.Primary,
+        contentColor = Color.White,
+        indicator = { positions ->
+            TabRowDefaults.SecondaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(positions[selected.ordinal]),
+                height = 3.dp,
+                color = McqColors.BadgeYellow,
+            )
+        },
+        divider = {},
+    ) {
+        HomeTab.entries.forEach { tab ->
+            Tab(
+                selected = tab == selected,
+                onClick = { onSelect(tab) },
+                selectedContentColor = Color.White,
+                unselectedContentColor = Color.White.copy(alpha = 0.7f),
+                text = {
+                    Text(
+                        stringResource(tab.label),
+                        fontWeight = if (tab == selected) FontWeight.Bold else FontWeight.Medium,
+                        letterSpacing = 0.8.sp,
+                    )
+                },
+            )
+        }
     }
 }

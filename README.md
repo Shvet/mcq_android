@@ -17,6 +17,14 @@ Laravel admin panel in [Shvet/mcq](https://github.com/Shvet/mcq).
   - Screenshot of the page with drawings, shared through the system share sheet
   - PDFs are cached on the device after the first download
 - Bookmarks screen with delete
+- MCQ tests (home screen's **MCQ Test** tab), from the admin panel's MCQ section
+  - Same category → sub category → sub sub category tree as the PDFs; every leaf is a test
+  - Questions and answers can be text, images (tap to zoom) or both; 4 or 5 answers
+  - Timer starts when the student taps *Start test*; pause/resume, auto-pause when the app is left
+  - Question grid to jump around, finish confirmation with the un-attempted count
+  - Result screen: score ring, right / wrong / un-attempted counts, time taken, accuracy,
+    answer review with filters and the admin's note for the right answer
+  - *Share result* sends the score card as a screenshot
 - "Show Your Support" rate dialog on exit
 - AdMob banners and interstitials (every N PDF opens), Google test IDs by default
 
@@ -51,6 +59,7 @@ app/src/main/java/com/onegoal/mcq/
   data/local    Room database for bookmarks
   data/prefs    DataStore: last read position, cached app settings, night mode
   data/pdf      PDF download cache
-  ui/…          Compose screens (splash, home, list, bookmarks, pdf) and shared components
+  data/quiz     In-memory hand-off of finished test results to the result screen
+  ui/…          Compose screens (splash, home, list, bookmarks, pdf, quiz) and shared components
   ads           AdMob helpers
 ```
