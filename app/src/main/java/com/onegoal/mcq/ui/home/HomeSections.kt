@@ -1,7 +1,6 @@
 package com.onegoal.mcq.ui.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,10 +11,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -24,12 +23,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -53,72 +54,82 @@ import com.onegoal.mcq.model.HomeItem
 import com.onegoal.mcq.model.HomeLayout
 import com.onegoal.mcq.model.HomeMeta
 import com.onegoal.mcq.model.HomeSection
-import com.onegoal.mcq.ui.components.MessageState
+import com.onegoal.mcq.model.HomeSeeAll
 import kotlinx.coroutines.delay
 
 /*
- * The Home tab, drawn from the admin "Home Screen Sections" of this app.
- * Sizes and colours follow the admin phone preview (home-section/index.blade.php and the
- * .pv-* rules in main.css), so what the admin sees there is what the app shows.
+ * Sections of the home screen, one per admin "Home Screen Section".
+ * Sizes, colours and wording follow the admin phone preview (home-section/index.blade.php and
+ * the .pv-* rules in main.css), so what the admin builds there is what the app shows.
  */
-private object HomeStyle {
+internal object HomeStyle {
+    val Background = Color(0xFFF5F7FB)
     val Title = Color(0xFF111827)
     val Meta = Color(0xFF6B7280)
-    val Outline = Color(0xFFE5E7EB)
-    val Placeholder = Color(0xFFEEF2FF)
-    val PlaceholderIcon = Color(0xFF6366F1)
+    val Accent = Color(0xFF1E88E5)
     val Chevron = Color(0xFF9CA3AF)
+    val ChevronBg = Color(0xFFF1F5F9)
     val Dot = Color(0xFFD1D5DB)
-    val DotOn = Color(0xFF2196F3)
     val Gutter = 16.dp
-    val Gap = 10.dp
+    val Gap = 12.dp
+
+    /** Soft tile colours for items without an image; picked by item id (same order as the preview). */
+    val Palette = listOf(
+        Color(0xFFE3F2FD) to Color(0xFF1E88E5),
+        Color(0xFFE8F5E9) to Color(0xFF43A047),
+        Color(0xFFFFF3E0) to Color(0xFFFB8C00),
+        Color(0xFFF3E5F5) to Color(0xFF8E24AA),
+        Color(0xFFFFEBEE) to Color(0xFFE53935),
+        Color(0xFFE0F7FA) to Color(0xFF00ACC1),
+    )
+
+    fun tile(item: HomeItem): Pair<Color, Color> = Palette[(item.id % Palette.size).toInt().let { if (it < 0) -it else it }]
 }
 
 @Composable
-fun HomeSectionsContent(
-    state: HomeSectionsUiState,
-    onRetry: () -> Unit,
-    onOpen: (HomeItem) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(modifier = modifier.fillMaxSize()) {
-        when (state) {
-            HomeSectionsUiState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-            HomeSectionsUiState.Error -> MessageState(
-                message = stringResource(R.string.error_loading),
-                onRetry = onRetry,
-                modifier = Modifier.align(Alignment.Center),
-            )
-            is HomeSectionsUiState.Loaded -> if (state.sections.isEmpty()) {
-                MessageState(stringResource(R.string.empty_list), Modifier.align(Alignment.Center))
-            } else {
-                LazyColumn(contentPadding = PaddingValues(bottom = 12.dp)) {
-                    items(state.sections, key = { it.id }) { section ->
-                        HomeSectionBlock(section = section, onOpen = onOpen)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeSectionBlock(section: HomeSection, onOpen: (HomeItem) -> Unit) {
-    Column(Modifier.padding(top = 12.dp)) {
+internal fun HomeSectionBlock(section: HomeSection, onOpen: (HomeItem) -> Unit, onSeeAll: (HomeSeeAll) -> Unit) {
+    Column(Modifier.padding(top = 20.dp)) {
         if (section.layout != HomeLayout.SLIDER && section.title.isNotBlank()) {
-            Text(
-                section.title,
-                color = HomeStyle.Title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = HomeStyle.Gutter).padding(bottom = 8.dp),
-            )
+            SectionHeader(section.title, section.seeAll?.let { target -> { onSeeAll(target) } })
         }
         when (section.layout) {
             HomeLayout.SLIDER -> SliderLayout(section.items, onOpen)
             HomeLayout.HORIZONTAL -> HorizontalLayout(section.items, onOpen)
             HomeLayout.GRID -> GridLayout(section.items, onOpen)
             HomeLayout.LIST -> ListLayout(section.items, onOpen)
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, onSeeAll: (() -> Unit)?) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = HomeStyle.Gutter)
+            .padding(bottom = 10.dp),
+    ) {
+        Text(
+            title,
+            color = HomeStyle.Title,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (onSeeAll != null) {
+            Text(
+                stringResource(R.string.home_see_all),
+                color = HomeStyle.Accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onSeeAll)
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
+            )
         }
     }
 }
@@ -137,32 +148,31 @@ private fun SliderLayout(items: List<HomeItem>, onOpen: (HomeItem) -> Unit) {
     HorizontalPager(
         state = pager,
         contentPadding = PaddingValues(horizontal = HomeStyle.Gutter),
-        pageSpacing = HomeStyle.Gap,
+        pageSpacing = 10.dp,
         key = { items[it].key },
     ) { page ->
         val item = items[page]
-        val shape = RoundedCornerShape(14.dp)
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(140.dp)
-                .clip(shape)
+                .height(160.dp)
+                .clip(RoundedCornerShape(18.dp))
                 .clickable { onOpen(item) },
         ) {
-            ItemImage(item, height = 140.dp)
+            ItemArt(item, Modifier.fillMaxSize(), iconSize = 36.dp)
             if (item.name.isNotBlank()) {
                 Text(
                     item.name,
                     color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .fillMaxWidth()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f))))
-                        .padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 10.dp),
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
+                        .padding(start = 14.dp, end = 14.dp, top = 28.dp, bottom = 12.dp),
                 )
             }
         }
@@ -170,41 +180,42 @@ private fun SliderLayout(items: List<HomeItem>, onOpen: (HomeItem) -> Unit) {
     if (items.size > 1) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         ) {
             repeat(items.size) { index ->
+                val on = index == pager.currentPage
                 Box(
                     Modifier
-                        .size(6.dp)
+                        .height(6.dp)
+                        .width(if (on) 18.dp else 6.dp)
                         .clip(CircleShape)
-                        .background(if (index == pager.currentPage) HomeStyle.DotOn else HomeStyle.Dot),
+                        .background(if (on) HomeStyle.Accent else HomeStyle.Dot),
                 )
             }
         }
     }
 }
 
+/** Cards in a sideways strip: picture on top, name and caption below. */
 @Composable
 private fun HorizontalLayout(items: List<HomeItem>, onOpen: (HomeItem) -> Unit) {
     LazyRow(
-        contentPadding = PaddingValues(horizontal = HomeStyle.Gutter),
+        contentPadding = PaddingValues(horizontal = HomeStyle.Gutter, vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(HomeStyle.Gap),
     ) {
         items(items, key = { it.key }) { item ->
-            Column(
-                Modifier
-                    .width(120.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onOpen(item) },
-            ) {
-                Box(Modifier.clip(RoundedCornerShape(12.dp))) { ItemImage(item, height = 84.dp) }
-                ItemName(item, Modifier.padding(top = 6.dp))
-                ItemMeta(item.meta, Modifier.padding(top = 2.dp))
+            HomeCard(onClick = { onOpen(item) }, modifier = Modifier.width(140.dp)) {
+                ItemArt(item, Modifier.fillMaxWidth().height(92.dp), iconSize = 30.dp)
+                Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                    ItemName(item, maxLines = 2, modifier = Modifier.heightIn(min = 34.dp))
+                    ItemMeta(item.meta, Modifier.padding(top = 4.dp))
+                }
             }
         }
     }
 }
 
+/** Two-column tiles: coloured icon square next to the name, like category chips in study apps. */
 @Composable
 private fun GridLayout(items: List<HomeItem>, onOpen: (HomeItem) -> Unit) {
     Column(
@@ -214,18 +225,17 @@ private fun GridLayout(items: List<HomeItem>, onOpen: (HomeItem) -> Unit) {
         items.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(HomeStyle.Gap)) {
                 row.forEach { item ->
-                    val shape = RoundedCornerShape(12.dp)
-                    Column(
-                        Modifier
-                            .weight(1f)
-                            .clip(shape)
-                            .border(1.dp, HomeStyle.Outline, shape)
-                            .clickable { onOpen(item) }
-                            .padding(bottom = 8.dp),
-                    ) {
-                        ItemImage(item, height = 70.dp)
-                        ItemName(item, Modifier.padding(start = 10.dp, end = 10.dp, top = 6.dp))
-                        ItemMeta(item.meta, Modifier.padding(horizontal = 10.dp).padding(top = 2.dp))
+                    HomeCard(onClick = { onOpen(item) }, modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(10.dp).heightIn(min = 48.dp),
+                        ) {
+                            ItemArt(item, Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)), iconSize = 22.dp)
+                            Column(Modifier.padding(start = 10.dp).weight(1f)) {
+                                ItemName(item, maxLines = 2)
+                                ItemMeta(item.meta, Modifier.padding(top = 2.dp))
+                            }
+                        }
                     }
                 }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -237,40 +247,53 @@ private fun GridLayout(items: List<HomeItem>, onOpen: (HomeItem) -> Unit) {
 @Composable
 private fun ListLayout(items: List<HomeItem>, onOpen: (HomeItem) -> Unit) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.padding(horizontal = HomeStyle.Gutter),
     ) {
         items.forEach { item ->
-            val shape = RoundedCornerShape(12.dp)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(shape)
-                    .border(1.dp, HomeStyle.Outline, shape)
-                    .clickable { onOpen(item) }
-                    .padding(10.dp),
-            ) {
-                Box(Modifier.size(46.dp).clip(RoundedCornerShape(10.dp))) { ItemImage(item, height = 46.dp) }
-                Column(Modifier.weight(1f)) {
-                    ItemName(item)
-                    ItemMeta(item.meta, Modifier.padding(top = 2.dp))
+            HomeCard(onClick = { onOpen(item) }, modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(12.dp),
+                ) {
+                    ItemArt(item, Modifier.size(52.dp).clip(RoundedCornerShape(14.dp)), iconSize = 24.dp)
+                    Column(Modifier.padding(horizontal = 12.dp).weight(1f)) {
+                        ItemName(item, maxLines = 2, fontSize = 14.sp)
+                        ItemMeta(item.meta, Modifier.padding(top = 3.dp))
+                    }
+                    Box(
+                        Modifier.size(30.dp).clip(CircleShape).background(HomeStyle.ChevronBg),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = HomeStyle.Chevron,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                 }
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = HomeStyle.Chevron,
-                    modifier = Modifier.size(18.dp),
-                )
             }
         }
     }
 }
 
 @Composable
-private fun ItemImage(item: HomeItem, height: Dp) {
-    val modifier = Modifier.fillMaxWidth().height(height)
+internal fun HomeCard(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        content()
+    }
+}
+
+/** The item's image, or a soft coloured tile with an icon for what it is. */
+@Composable
+private fun ItemArt(item: HomeItem, modifier: Modifier, iconSize: Dp) {
     if (item.imageUrl != null) {
         AsyncImage(
             model = item.imageUrl,
@@ -278,26 +301,29 @@ private fun ItemImage(item: HomeItem, height: Dp) {
             contentScale = ContentScale.Crop,
             modifier = modifier,
         )
-    } else {
-        Box(modifier.background(HomeStyle.Placeholder), contentAlignment = Alignment.Center) {
-            Icon(
-                if (item.isQuiz) Icons.Filled.Checklist else Icons.Filled.Image,
-                contentDescription = null,
-                tint = HomeStyle.PlaceholderIcon,
-                modifier = Modifier.size(if (height < 60.dp) 18.dp else 24.dp),
-            )
-        }
+        return
+    }
+    val (background, tint) = HomeStyle.tile(item)
+    Box(modifier.background(background), contentAlignment = Alignment.Center) {
+        Icon(itemIcon(item), contentDescription = null, tint = tint, modifier = Modifier.size(iconSize))
     }
 }
 
+private fun itemIcon(item: HomeItem): ImageVector = when {
+    item.isQuiz -> Icons.Filled.Quiz
+    item.isFolder -> Icons.Filled.Folder
+    else -> Icons.Filled.PictureAsPdf
+}
+
 @Composable
-private fun ItemName(item: HomeItem, modifier: Modifier = Modifier) {
+private fun ItemName(item: HomeItem, maxLines: Int = 1, fontSize: androidx.compose.ui.unit.TextUnit = 13.sp, modifier: Modifier = Modifier) {
     Text(
         item.name,
         color = HomeStyle.Title,
-        fontSize = 13.sp,
+        fontSize = fontSize,
+        lineHeight = fontSize * 1.3f,
         fontWeight = FontWeight.SemiBold,
-        maxLines = 1,
+        maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier,
     )
@@ -324,6 +350,6 @@ private fun ItemMeta(meta: HomeMeta, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun MetaIcon(icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun MetaIcon(icon: ImageVector) {
     Icon(icon, contentDescription = null, tint = HomeStyle.Meta, modifier = Modifier.size(12.dp))
 }

@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.res.stringResource
+import com.onegoal.mcq.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -16,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.onegoal.mcq.ads.InterstitialAds
 import com.onegoal.mcq.model.ContentItem
+import com.onegoal.mcq.model.HomeSeeAll
 import com.onegoal.mcq.model.HomeTarget
 import com.onegoal.mcq.model.QuizNode
 import com.onegoal.mcq.ui.AppViewModel
@@ -45,6 +48,8 @@ private object Routes {
     const val QUIZ_LIST = "quiz-list/{node}"
     const val QUIZ_TEST = "quiz-test/{node}"
     const val QUIZ_RESULT = "quiz-result/{result}"
+    const val ALL_PDFS = "all-pdfs"
+    const val ALL_QUIZZES = "all-quizzes"
 
     fun list(itemJson: String) = "list/${Uri.encode(itemJson)}"
     fun pdf(itemJson: String, section: Int, page: Int) = "pdf/${Uri.encode(itemJson)}?section=$section&page=$page"
@@ -111,19 +116,15 @@ fun McqNavHost(
         }
 
         composable(Routes.HOME) {
+            val pdfTitle = stringResource(R.string.home_section_pdfs)
+            val quizTitle = stringResource(R.string.home_section_tests)
             val homeViewModel: HomeSectionsViewModel = viewModel(
-                factory = viewModelFactory { initializer { HomeSectionsViewModel(container.repository) } },
-            )
-            val viewModel: ContentListViewModel = viewModel(
-                factory = viewModelFactory { initializer { ContentListViewModel(container.repository, parent = null) } },
-            )
-            val quizViewModel: QuizListViewModel = viewModel(
-                factory = viewModelFactory { initializer { QuizListViewModel(container.repository, parent = null) } },
+                factory = viewModelFactory {
+                    initializer { HomeSectionsViewModel(container.repository, pdfTitle = pdfTitle, quizTitle = quizTitle) }
+                },
             )
             HomeScreen(
                 homeViewModel = homeViewModel,
-                viewModel = viewModel,
-                quizViewModel = quizViewModel,
                 config = config,
                 bookmarkCount = bookmarkCount,
                 lastRead = lastRead,
@@ -136,11 +137,46 @@ fun McqNavHost(
                         HomeTarget.None -> Unit
                     }
                 },
-                onOpenItem = ::openItem,
-                onOpenQuiz = ::openQuiz,
+                onSeeAll = { target ->
+                    when (target) {
+                        HomeSeeAll.AllPdfs -> navController.navigate(Routes.ALL_PDFS)
+                        HomeSeeAll.AllQuizzes -> navController.navigate(Routes.ALL_QUIZZES)
+                        is HomeSeeAll.PdfFolder -> openItem(target.item)
+                        is HomeSeeAll.QuizFolder -> openQuiz(target.node)
+                    }
+                },
                 onResume = { position -> openPdf(position.item, position.sectionIndex, position.page) },
                 onBookmarks = { navController.navigate(Routes.BOOKMARKS) },
                 onExit = onExit,
+            )
+        }
+
+        composable(Routes.ALL_PDFS) {
+            val viewModel: ContentListViewModel = viewModel(
+                factory = viewModelFactory { initializer { ContentListViewModel(container.repository, parent = null) } },
+            )
+            ContentListScreen(
+                title = stringResource(R.string.home_section_pdfs),
+                viewModel = viewModel,
+                config = config,
+                onBack = { navController.popBackStack() },
+                onHome = ::goHome,
+                onOpenItem = ::openItem,
+                isRoot = true,
+            )
+        }
+
+        composable(Routes.ALL_QUIZZES) {
+            val viewModel: QuizListViewModel = viewModel(
+                factory = viewModelFactory { initializer { QuizListViewModel(container.repository, parent = null) } },
+            )
+            QuizListScreen(
+                title = stringResource(R.string.home_section_tests),
+                viewModel = viewModel,
+                config = config,
+                onBack = { navController.popBackStack() },
+                onHome = ::goHome,
+                onOpen = ::openQuiz,
             )
         }
 
@@ -169,7 +205,7 @@ fun McqNavHost(
                 factory = viewModelFactory { initializer { ContentListViewModel(container.repository, parent = item) } },
             )
             ContentListScreen(
-                parent = item,
+                title = item.title,
                 viewModel = viewModel,
                 config = config,
                 onBack = { navController.popBackStack() },
@@ -221,7 +257,7 @@ fun McqNavHost(
                 factory = viewModelFactory { initializer { QuizListViewModel(container.repository, parent = node) } },
             )
             QuizListScreen(
-                parent = node,
+                title = node.title,
                 viewModel = viewModel,
                 config = config,
                 onBack = { navController.popBackStack() },

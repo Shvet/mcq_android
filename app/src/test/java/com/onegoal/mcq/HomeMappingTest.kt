@@ -3,7 +3,11 @@ package com.onegoal.mcq
 import com.onegoal.mcq.data.remote.HomeItemDto
 import com.onegoal.mcq.data.remote.HomeSectionDto
 import com.onegoal.mcq.data.remote.ListResponse
+import com.onegoal.mcq.data.fallbackHomeSections
 import com.onegoal.mcq.data.toHomeSections
+import com.onegoal.mcq.model.ContentItem
+import com.onegoal.mcq.model.HomeSeeAll
+import com.onegoal.mcq.model.QuizNode
 import com.onegoal.mcq.model.HomeLayout
 import com.onegoal.mcq.model.HomeMeta
 import com.onegoal.mcq.model.HomeTarget
@@ -83,6 +87,36 @@ class HomeMappingTest {
         assertEquals(HomeLayout.SLIDER, sections.single().layout)
         assertEquals(HomeTarget.None, sections.single().items.single().target)
         assertFalse(sections.single().items.single().isQuiz)
+    }
+
+    @Test
+    fun seeAllPointsAtTheListTheSectionCameFrom() {
+        val item = HomeItemDto(id = 1, type = "category", name = "A")
+        fun seeAll(type: String, id: String) =
+            map(HomeSectionDto(id = 1, title = "Physics", sourceType = type, sourceId = id, items = listOf(item))).single().seeAll
+
+        assertEquals(HomeSeeAll.AllPdfs, seeAll("package", "com.a"))
+        assertEquals(HomeSeeAll.AllQuizzes, seeAll("quiz_package", "com.a"))
+        val folder = (seeAll("category", "7") as HomeSeeAll.PdfFolder).item
+        assertEquals(7L, folder.id)
+        assertEquals("Physics", folder.title)
+        assertTrue(folder.hasChildren)
+        assertEquals(NodeLevel.SUB_CATEGORY, (seeAll("quiz_sub_category", "9") as HomeSeeAll.QuizFolder).node.level)
+        assertEquals(null, seeAll("banner", "banners"))
+    }
+
+    @Test
+    fun fallbackHomeShowsPdfAndMcqCategoriesWhenAdminHasNoSections() {
+        val pdfs = (1L..8L).map { ContentItem(id = it, level = NodeLevel.CATEGORY, title = "Chapter $it", hasChildren = true) }
+        val quizzes = listOf(QuizNode(id = 3, level = NodeLevel.CATEGORY, title = "Test", questionCount = 20))
+
+        val sections = fallbackHomeSections("PDF Notes", pdfs, "MCQ Tests", quizzes)
+
+        assertEquals(listOf("PDF Notes", "MCQ Tests"), sections.map { it.title })
+        assertEquals(6, sections[0].items.size)
+        assertEquals(HomeSeeAll.AllPdfs, sections[0].seeAll)
+        assertEquals(HomeMeta.Questions(20), sections[1].items.single().meta)
+        assertTrue(fallbackHomeSections("P", emptyList(), "Q", emptyList()).isEmpty())
     }
 
     @Test
