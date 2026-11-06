@@ -11,6 +11,10 @@ interface McqApi {
     @GET("api/app-config")
     suspend fun appConfig(@Query("package_name") packageName: String): ObjectResponse<AppConfigDto>
 
+    /** Home sections built in admin for this app (its own plus the ones shared by every app). */
+    @GET("api/home")
+    suspend fun home(@Query("package_name") packageName: String): ListResponse<HomeSectionDto>
+
     @FormUrlEncoded
     @POST("api/mcq-categories")
     suspend fun categories(@Field("package_name") packageName: String): ListResponse<CategoryDto>

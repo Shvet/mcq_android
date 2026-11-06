@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.onegoal.mcq.R
 import com.onegoal.mcq.model.AppConfig
 import com.onegoal.mcq.model.ContentItem
+import com.onegoal.mcq.model.HomeItem
 import com.onegoal.mcq.model.QuizNode
 import com.onegoal.mcq.model.ReadingPosition
 import com.onegoal.mcq.ui.components.BannerAd
@@ -56,6 +57,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
+    homeViewModel: HomeSectionsViewModel,
     viewModel: ContentListViewModel,
     quizViewModel: QuizListViewModel,
     config: AppConfig,
@@ -63,6 +65,7 @@ fun HomeScreen(
     lastRead: ReadingPosition?,
     isLastReadHintShown: suspend () -> Boolean,
     onLastReadHintShown: () -> Unit,
+    onOpenHomeItem: (HomeItem) -> Unit,
     onOpenItem: (ContentItem) -> Unit,
     onOpenQuiz: (QuizNode) -> Unit,
     onResume: (ReadingPosition) -> Unit,
@@ -73,7 +76,12 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val quizState by quizViewModel.state.collectAsStateWithLifecycle()
-    var selectedTab by rememberSaveable { mutableStateOf(HomeTab.Pdf) }
+    val homeState by homeViewModel.state.collectAsStateWithLifecycle()
+    // Apps without admin home sections keep the old PDF / MCQ tabs only.
+    val hasHome = (homeState as? HomeSectionsUiState.Loaded)?.sections?.isEmpty() != true
+    val tabs = if (hasHome) HomeTab.entries else HomeTab.entries - HomeTab.Home
+    var chosenTab by rememberSaveable { mutableStateOf(HomeTab.Home) }
+    val selectedTab = if (chosenTab in tabs) chosenTab else HomeTab.Pdf
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     var showSupport by remember { mutableStateOf(false) }
     var showLastReadHint by remember { mutableStateOf(false) }
@@ -96,7 +104,13 @@ fun HomeScreen(
                     title = config.toolbarTitle ?: stringResource(R.string.toolbar_title),
                     onNavigation = openDrawer,
                     showBack = false,
-                    onHome = { if (selectedTab == HomeTab.Pdf) viewModel.load() else quizViewModel.load() },
+                    onHome = {
+                        when (selectedTab) {
+                            HomeTab.Home -> homeViewModel.load()
+                            HomeTab.Pdf -> viewModel.load()
+                            HomeTab.Mcq -> quizViewModel.load()
+                        }
+                    },
                     overflow = buildList {
                         add(OverflowAction(context.getString(R.string.menu_share)) { Intents.shareApp(context, config.shareMessage) })
                         add(OverflowAction(context.getString(R.string.menu_rate)) { Intents.rateApp(context) })
@@ -106,7 +120,7 @@ fun HomeScreen(
                 )
             },
             floatingActionButton = {
-                if (selectedTab == HomeTab.Pdf) FloatingActionButton(
+                if (selectedTab != HomeTab.Mcq) FloatingActionButton(
                     onClick = {
                         scope.launch {
                             when {
@@ -134,8 +148,14 @@ fun HomeScreen(
                     .padding(padding)
                     .fillMaxSize(),
             ) {
-                HomeTabs(selected = selectedTab, onSelect = { selectedTab = it })
+                HomeTabs(tabs = tabs, selected = selectedTab, onSelect = { chosenTab = it })
                 when (selectedTab) {
+                    HomeTab.Home -> HomeSectionsContent(
+                        state = homeState,
+                        onRetry = homeViewModel::load,
+                        onOpen = onOpenHomeItem,
+                        modifier = Modifier.weight(1f),
+                    )
                     HomeTab.Pdf -> ContentList(
                         state = state,
                         onRetry = viewModel::load,
@@ -192,25 +212,26 @@ fun HomeScreen(
     }
 }
 
-private enum class HomeTab(val label: Int) { Pdf(R.string.tab_pdf), Mcq(R.string.tab_mcq) }
+private enum class HomeTab(val label: Int) { Home(R.string.tab_home), Pdf(R.string.tab_pdf), Mcq(R.string.tab_mcq) }
 
-/** PDF / MCQ switch under the app bar, in the toolbar colour so it reads as one header. */
+/** Home / PDF / MCQ switch under the app bar, in the toolbar colour so it reads as one header. */
 @Composable
-private fun HomeTabs(selected: HomeTab, onSelect: (HomeTab) -> Unit) {
+private fun HomeTabs(tabs: List<HomeTab>, selected: HomeTab, onSelect: (HomeTab) -> Unit) {
+    val selectedIndex = tabs.indexOf(selected).coerceAtLeast(0)
     TabRow(
-        selectedTabIndex = selected.ordinal,
+        selectedTabIndex = selectedIndex,
         containerColor = McqColors.Primary,
         contentColor = Color.White,
         indicator = { positions ->
             TabRowDefaults.SecondaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(positions[selected.ordinal]),
+                modifier = Modifier.tabIndicatorOffset(positions[selectedIndex]),
                 height = 3.dp,
                 color = McqColors.BadgeYellow,
             )
         },
         divider = {},
     ) {
-        HomeTab.entries.forEach { tab ->
+        tabs.forEach { tab ->
             Tab(
                 selected = tab == selected,
                 onClick = { onSelect(tab) },

@@ -6,7 +6,11 @@ Laravel admin panel in [Shvet/mcq](https://github.com/Shvet/mcq).
 ## Features
 
 - Splash screen with the brand badge, lab illustration and app title
-- Home list of PDF categories with index numbers, "last read" button and a 300x250 ad
+- **Home** tab drawn from the admin panel's *Home Screen Sections* for this app's package
+  (`GET /api/home?package_name=…`): horizontal, grid, list and slider/banner sections of PDF
+  categories, MCQ tests or banners, laid out like the admin phone preview. Apps with no sections
+  open straight on the PDF tab.
+- PDF tab: list of PDF categories with index numbers, "last read" button and a 300x250 ad
 - Navigation drawer: Home, Pdf BookMark (with count badge), Share App, Rate Us, Feedback (mail)
 - Chapter lists (any depth the backend provides) with a per-category label such as "Chapter-wise"
 - PDF viewer
