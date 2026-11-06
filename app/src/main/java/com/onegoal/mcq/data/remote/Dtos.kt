@@ -123,6 +123,8 @@ data class HomeSectionDto(
     val id: Long,
     val title: String = "",
     val layout: String? = null,
+    @SerialName("source_type") val sourceType: String? = null,
+    @SerialName("source_id") val sourceId: String? = null,
     @SerialName("item_type") val itemType: String? = null,
     val items: List<HomeItemDto> = emptyList(),
 )
