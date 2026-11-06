@@ -25,4 +25,21 @@ object McqColors {
     val BrandTeal = Color(0xFF0B4F6C)
     val RowBackground = Color(0xFFFFFFFF)
     val ScreenBackground = Color(0xFFF7F7F7)
+
+    // MCQ test and result screens
+    val QuizBackground = Color(0xFFF3F6FB)
+    val Correct = Color(0xFF2E7D32)
+    val CorrectContainer = Color(0xFFE6F4EA)
+    val Wrong = Color(0xFFC62828)
+    val WrongContainer = Color(0xFFFDECEC)
+    val Skipped = Color(0xFFEF6C00)
+    val SkippedContainer = Color(0xFFFFF3E0)
+    val TimeBlue = Color(0xFF1565C0)
+    val TimeContainer = Color(0xFFE3F0FD)
+    val SelectedContainer = Color(0xFFE3F0FD)
+    val NoteContainer = Color(0xFFFFF8E1)
+    val NoteAccent = Color(0xFFF9A825)
+    val CardOutline = Color(0xFFE2E7EF)
+    val MutedText = Color(0xFF5F6B7A)
+    val ScoreGold = Color(0xFFFFD54F)
 }

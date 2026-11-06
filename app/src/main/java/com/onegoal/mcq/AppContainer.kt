@@ -4,6 +4,7 @@ import android.content.Context
 import com.onegoal.mcq.data.McqRepository
 import com.onegoal.mcq.data.local.AppDatabase
 import com.onegoal.mcq.data.pdf.PdfFileCache
+import com.onegoal.mcq.data.quiz.QuizResultStore
 import com.onegoal.mcq.data.prefs.AppPreferences
 import com.onegoal.mcq.data.remote.McqApi
 import kotlinx.serialization.json.Json
@@ -66,4 +67,6 @@ class AppContainer(context: Context) {
     )
 
     val pdfFileCache = PdfFileCache(appContext, okHttpClient)
+
+    val quizResults = QuizResultStore()
 }
