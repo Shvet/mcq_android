@@ -37,6 +37,13 @@
 
     <string name="questions_section">QUESTIONS-SECTION:</string>
     <string name="answers_section">ANSWERS-SECTION:</string>
+    <string name="pdf_locked_title">This PDF is password-protected</string>
+    <string name="pdf_locked_message">Enter the PDF password to open it.</string>
+    <string name="pdf_wrong_password">Wrong password. Please check it and try again.</string>
+    <string name="pdf_password">PDF password</string>
+    <string name="pdf_open">Open PDF</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
     <string name="page_no">Page No: %1$d</string>
     <string name="bookmarks_empty">No bookmarks yet. Tap the bookmark icon while reading a PDF to save a page.</string>
     <string name="bookmark_added">Page %1$d bookmarked</string>

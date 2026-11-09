@@ -20,9 +20,15 @@ internal fun pdfSections(
     answerLabel: String?,
     defaultQuestionLabel: String,
     defaultAnswerLabel: String,
+    pdfPassword: String? = null,
+    answerPdfPassword: String? = null,
 ): List<PdfSection> = buildList {
-    if (!pdf.isNullOrBlank()) add(PdfSection(questionLabel?.takeIf { it.isNotBlank() } ?: defaultQuestionLabel, pdf))
-    if (!answerPdf.isNullOrBlank()) add(PdfSection(answerLabel?.takeIf { it.isNotBlank() } ?: defaultAnswerLabel, answerPdf))
+    if (!pdf.isNullOrBlank()) {
+        add(PdfSection(questionLabel?.takeIf { it.isNotBlank() } ?: defaultQuestionLabel, pdf, pdfPassword?.takeIf { it.isNotEmpty() }))
+    }
+    if (!answerPdf.isNullOrBlank()) {
+        add(PdfSection(answerLabel?.takeIf { it.isNotBlank() } ?: defaultAnswerLabel, answerPdf, answerPdfPassword?.takeIf { it.isNotEmpty() }))
+    }
 }
 
 /** Turns /api/home into home sections, dropping sections whose items are all unknown types. */
@@ -72,7 +78,10 @@ internal fun HomeItemDto.toHomeItem(defaultQuestionLabel: String, defaultAnswerL
                 parentTitle = parentName,
                 itemLabel = itemLabel,
                 hasChildren = folder,
-                sections = pdfSections(pdf, answerPdf, questionLabel, answerLabel, defaultQuestionLabel, defaultAnswerLabel),
+                sections = pdfSections(
+                    pdf, answerPdf, questionLabel, answerLabel, defaultQuestionLabel, defaultAnswerLabel,
+                    pdfPassword, answerPdfPassword,
+                ),
             ),
         )
     }

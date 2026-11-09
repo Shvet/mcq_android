@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onegoal.mcq.data.McqRepository
 import com.onegoal.mcq.data.pdf.PdfFileCache
+import com.onegoal.mcq.data.pdf.PdfPasswordException
 import com.onegoal.mcq.data.prefs.AppPreferences
 import com.onegoal.mcq.model.ContentItem
 import com.onegoal.mcq.model.ReadingPosition
@@ -27,6 +28,9 @@ sealed interface DocumentState {
     data object Loading : DocumentState
     data class Ready(val renderer: PdfDocumentRenderer) : DocumentState
     data object Error : DocumentState
+
+    /** Password-protected and the password is missing or wrong; the reader can type it. */
+    data class Locked(val wrongPassword: Boolean) : DocumentState
 }
 
 sealed interface SearchState {
@@ -50,6 +54,9 @@ class PdfViewerViewModel(
     private val documents = MutableStateFlow<Map<Int, DocumentState>>(emptyMap())
     private val search = PdfTextSearch()
     private var searchJob: Job? = null
+
+    /** Passwords typed by the reader, per section; they win over the one sent by the backend. */
+    private val typedPasswords = mutableMapOf<Int, String>()
 
     /** Page the reader returned to per section, so switching tabs keeps your place. */
     private val pagePerSection = mutableMapOf<Int, Int>()
@@ -108,6 +115,13 @@ class PdfViewerViewModel(
 
     fun retry() = loadSection(_position.value.sectionIndex, force = true)
 
+    /** Opens the current, password-protected section with a password the reader typed. */
+    fun unlock(password: String) {
+        val section = _position.value.sectionIndex
+        typedPasswords[section] = password
+        loadSection(section, force = true)
+    }
+
     fun toggleNightMode() {
         viewModelScope.launch { preferences.setNightMode(!nightMode.value) }
     }
@@ -143,15 +157,26 @@ class PdfViewerViewModel(
 
     private fun loadSection(index: Int, force: Boolean = false) {
         val existing = documents.value[index]
-        if (!force && existing != null && existing != DocumentState.Error) return
-        val url = item.sections.getOrNull(index)?.url ?: run {
+        if (!force && (existing is DocumentState.Ready || existing == DocumentState.Loading)) return
+        val section = item.sections.getOrNull(index) ?: run {
             documents.update { it + (index to DocumentState.Error) }
             return
         }
+        val password = typedPasswords[index] ?: section.password
         documents.update { it + (index to DocumentState.Loading) }
         viewModelScope.launch {
-            val state = runCatching { PdfDocumentRenderer.open(fileCache.get(url)) }
-                .fold(onSuccess = { DocumentState.Ready(it) }, onFailure = { DocumentState.Error })
+            val state = runCatching { PdfDocumentRenderer.open(fileCache.getReadable(section.url, password)) }
+                .fold(
+                    onSuccess = { DocumentState.Ready(it) },
+                    onFailure = { error ->
+                        when (error) {
+                            is PdfPasswordException -> DocumentState.Locked(error.wrongPassword)
+                            // PdfRenderer refuses encrypted files it was given no password for.
+                            is SecurityException -> DocumentState.Locked(wrongPassword = !password.isNullOrEmpty())
+                            else -> DocumentState.Error
+                        }
+                    },
+                )
             documents.update { it + (index to state) }
         }
     }

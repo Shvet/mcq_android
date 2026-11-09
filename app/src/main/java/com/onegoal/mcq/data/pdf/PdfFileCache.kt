@@ -28,6 +28,16 @@ class PdfFileCache(context: Context, private val client: OkHttpClient) {
         target
     }
 
+    /**
+     * Downloads [url] and, when the PDF has a [password], returns a copy without the password
+     * so the platform renderer can open it. Throws [PdfPasswordException] for a wrong password.
+     */
+    suspend fun getReadable(url: String, password: String?): File {
+        val file = get(url)
+        if (password.isNullOrEmpty()) return file
+        return withContext(Dispatchers.IO) { PdfUnlocker.unlock(file, password) }
+    }
+
     private fun fileNameFor(url: String): String {
         val digest = MessageDigest.getInstance("SHA-1").digest(url.toByteArray())
         return digest.joinToString("") { "%02x".format(it) } + ".pdf"

@@ -26,6 +26,8 @@ data class CategoryDto(
     val image: String? = null,
     val pdf: String? = null,
     @SerialName("answer_pdf") val answerPdf: String? = null,
+    @SerialName("pdf_password") val pdfPassword: String? = null,
+    @SerialName("answer_pdf_password") val answerPdfPassword: String? = null,
     @SerialName("question_label") val questionLabel: String? = null,
     @SerialName("answer_label") val answerLabel: String? = null,
 )
@@ -40,6 +42,8 @@ data class SubCategoryDto(
     val image: String? = null,
     val pdf: String? = null,
     @SerialName("answer_pdf") val answerPdf: String? = null,
+    @SerialName("pdf_password") val pdfPassword: String? = null,
+    @SerialName("answer_pdf_password") val answerPdfPassword: String? = null,
     @SerialName("question_label") val questionLabel: String? = null,
     @SerialName("answer_label") val answerLabel: String? = null,
 )
@@ -54,6 +58,8 @@ data class SubSubCategoryDto(
     val image: String? = null,
     val pdf: String? = null,
     @SerialName("answer_pdf") val answerPdf: String? = null,
+    @SerialName("pdf_password") val pdfPassword: String? = null,
+    @SerialName("answer_pdf_password") val answerPdfPassword: String? = null,
     @SerialName("question_label") val questionLabel: String? = null,
     @SerialName("answer_label") val answerLabel: String? = null,
 )
@@ -139,6 +145,8 @@ data class HomeItemDto(
     val image: String? = null,
     val pdf: String? = null,
     @SerialName("answer_pdf") val answerPdf: String? = null,
+    @SerialName("pdf_password") val pdfPassword: String? = null,
+    @SerialName("answer_pdf_password") val answerPdfPassword: String? = null,
     @SerialName("question_label") val questionLabel: String? = null,
     @SerialName("answer_label") val answerLabel: String? = null,
     val audio: String? = null,
