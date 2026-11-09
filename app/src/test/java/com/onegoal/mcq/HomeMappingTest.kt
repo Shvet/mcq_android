@@ -38,6 +38,19 @@ class HomeMappingTest {
     }
 
     @Test
+    fun carriesPdfPasswordsFromTheBackend() {
+        val body = """
+            {"status":true,"data":[{"id":3,"title":"Locked","layout":"list","items":[{"id":9,"type":"sub_category",
+              "name":"Atoms","has_children":false,"pdf":"https://x/q.pdf","answer_pdf":"https://x/a.pdf",
+              "pdf_password":"secret","answer_pdf_password":"","children":[]}]}]}
+        """.trimIndent()
+        val response = json.decodeFromString(ListResponse.serializer(HomeSectionDto.serializer()), body)
+        val target = map(*response.data.toTypedArray()).single().items.single().target as HomeTarget.Pdf
+
+        assertEquals(listOf("secret", null), target.item.sections.map { it.password })
+    }
+
+    @Test
     fun foldersShowChildCountOrTapToOpen() {
         val child = HomeItemDto(id = 2, type = "sub_category", name = "Child")
         val items = map(
