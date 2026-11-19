@@ -19,10 +19,10 @@ import com.onegoal.mcq.ui.components.OverflowAction
 import com.onegoal.mcq.ui.theme.McqColors
 import com.onegoal.mcq.util.Intents
 
-/** Children of an MCQ category or sub category. */
+/** Every MCQ category of the app, or the children of an MCQ category or sub category. */
 @Composable
 fun QuizListScreen(
-    parent: QuizNode,
+    title: String,
     viewModel: QuizListViewModel,
     config: AppConfig,
     onBack: () -> Unit,
@@ -34,7 +34,7 @@ fun QuizListScreen(
     Scaffold(
         topBar = {
             McqTopBar(
-                title = parent.title,
+                title = title,
                 onNavigation = onBack,
                 showBack = true,
                 overflow = listOf(

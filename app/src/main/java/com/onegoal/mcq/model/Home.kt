@@ -20,7 +20,24 @@ data class HomeSection(
     val title: String,
     val layout: HomeLayout,
     val items: List<HomeItem>,
+    /** Where the section's "See all" goes; null hides it (banners). */
+    val seeAll: HomeSeeAll? = null,
 )
+
+/** Full list behind a section's "See all". */
+sealed interface HomeSeeAll {
+    /** Every PDF category of this app. */
+    data object AllPdfs : HomeSeeAll
+
+    /** Every MCQ category of this app. */
+    data object AllQuizzes : HomeSeeAll
+
+    /** Children of one PDF folder. */
+    data class PdfFolder(val item: ContentItem) : HomeSeeAll
+
+    /** Children of one MCQ folder. */
+    data class QuizFolder(val node: QuizNode) : HomeSeeAll
+}
 
 /** What a tap on a home item opens. */
 sealed interface HomeTarget {
@@ -50,6 +67,13 @@ data class HomeItem(
     val meta: HomeMeta,
     val target: HomeTarget,
 ) {
+    /** Opens a list rather than a PDF or a test. */
+    val isFolder: Boolean get() = when (target) {
+        is HomeTarget.Pdf -> target.item.hasChildren
+        is HomeTarget.Quiz -> target.node.hasChildren
+        HomeTarget.None -> false
+    }
+
     val key: String get() = when (target) {
         is HomeTarget.Pdf -> "pdf:${target.item.documentKey}"
         is HomeTarget.Quiz -> "quiz:${target.node.key}"

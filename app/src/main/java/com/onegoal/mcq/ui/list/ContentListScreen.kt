@@ -20,22 +20,23 @@ import com.onegoal.mcq.ui.components.McqTopBar
 import com.onegoal.mcq.ui.components.OverflowAction
 import com.onegoal.mcq.util.Intents
 
-/** Chapter list (children of a home category or of a sub category). */
+/** Chapter list: every PDF category of the app (`title` only), or the children of a folder. */
 @Composable
 fun ContentListScreen(
-    parent: ContentItem,
+    title: String,
     viewModel: ContentListViewModel,
     config: AppConfig,
     onBack: () -> Unit,
     onHome: () -> Unit,
     onOpenItem: (ContentItem) -> Unit,
+    isRoot: Boolean = false,
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     Scaffold(
         topBar = {
             McqTopBar(
-                title = parent.title,
+                title = title,
                 onNavigation = onBack,
                 showBack = true,
                 overflow = listOf(
@@ -56,7 +57,7 @@ fun ContentListScreen(
                 state = state,
                 onRetry = viewModel::load,
                 onItemClick = onOpenItem,
-                trailingLabel = { _, item -> item.itemLabel },
+                trailingLabel = { index, item -> if (isRoot) (index + 1).toString() else item.itemLabel },
                 modifier = Modifier.weight(1f),
             )
             BannerAd(enabled = config.adsEnabled, adUnitId = config.bannerAdUnitId, size = BannerSize.Banner)
