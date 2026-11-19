@@ -44,7 +44,7 @@ class McqRepository(
                 title = dto.name,
                 itemLabel = dto.itemLabel,
                 hasChildren = dto.hasChildren == 1,
-                sections = sections(dto.pdf, dto.answerPdf, dto.questionLabel, dto.answerLabel),
+                sections = sections(dto.pdf, dto.answerPdf, dto.questionLabel, dto.answerLabel, dto.pdfPassword, dto.answerPdfPassword),
             )
         }
     }
@@ -60,7 +60,7 @@ class McqRepository(
                     parentTitle = dto.categoryName ?: parent.title,
                     itemLabel = dto.itemLabel ?: parent.itemLabel,
                     hasChildren = dto.hasChildren == 1,
-                    sections = sections(dto.pdf, dto.answerPdf, dto.questionLabel, dto.answerLabel),
+                    sections = sections(dto.pdf, dto.answerPdf, dto.questionLabel, dto.answerLabel, dto.pdfPassword, dto.answerPdfPassword),
                 )
             }
 
@@ -72,7 +72,7 @@ class McqRepository(
                     parentTitle = parent.parentTitle ?: dto.categoryName,
                     itemLabel = dto.itemLabel ?: parent.itemLabel,
                     hasChildren = false,
-                    sections = sections(dto.pdf, dto.answerPdf, dto.questionLabel, dto.answerLabel),
+                    sections = sections(dto.pdf, dto.answerPdf, dto.questionLabel, dto.answerLabel, dto.pdfPassword, dto.answerPdfPassword),
                 )
             }
 
@@ -161,8 +161,17 @@ class McqRepository(
     fun decodeItem(itemJson: String): ContentItem? =
         runCatching { json.decodeFromString(ContentItem.serializer(), itemJson) }.getOrNull()
 
-    private fun sections(pdf: String?, answerPdf: String?, questionLabel: String?, answerLabel: String?): List<PdfSection> =
-        pdfSections(pdf, answerPdf, questionLabel, answerLabel, defaultQuestionLabel, defaultAnswerLabel)
+    private fun sections(
+        pdf: String?,
+        answerPdf: String?,
+        questionLabel: String?,
+        answerLabel: String?,
+        pdfPassword: String?,
+        answerPdfPassword: String?,
+    ): List<PdfSection> = pdfSections(
+        pdf, answerPdf, questionLabel, answerLabel, defaultQuestionLabel, defaultAnswerLabel,
+        pdfPassword, answerPdfPassword,
+    )
 
     /** The backend answers 404 with an empty list when a level has no rows yet. */
     private suspend fun <T> emptyOn404(block: suspend () -> List<T>): List<T> = try {

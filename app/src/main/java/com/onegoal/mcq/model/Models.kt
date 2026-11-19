@@ -11,6 +11,8 @@ enum class NodeLevel { CATEGORY, SUB_CATEGORY, SUB_SUB_CATEGORY }
 data class PdfSection(
     val label: String,
     val url: String,
+    /** Password of a password-protected PDF, entered by the admin; null when the file is not locked. */
+    val password: String? = null,
 )
 
 /** A row in any list screen: either a folder with children or a PDF document. */

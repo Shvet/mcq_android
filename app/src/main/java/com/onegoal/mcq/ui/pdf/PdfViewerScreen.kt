@@ -250,6 +250,11 @@ fun PdfViewerScreen(
                     onRetry = viewModel::retry,
                     modifier = Modifier.align(Alignment.Center),
                 )
+                is DocumentState.Locked -> PdfPasswordPrompt(
+                    wrongPassword = state.wrongPassword,
+                    onSubmit = viewModel::unlock,
+                    modifier = Modifier.align(Alignment.Center),
+                )
                 is DocumentState.Ready -> PdfPages(
                     renderer = state.renderer,
                     nightMode = nightMode,
